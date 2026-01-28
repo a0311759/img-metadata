@@ -1,15 +1,27 @@
 import streamlit as st
 from PIL import Image, ExifTags
 
+# Helper: convert rational numbers safely
+def rational_to_float(rational):
+    try:
+        if isinstance(rational, tuple) and len(rational) == 2:
+            num, den = rational
+            return num / den if den != 0 else 0
+        return float(rational)
+    except Exception:
+        return 0
+
 # Helper: convert DMS to decimal degrees
 def dms_to_decimal(dms, ref):
-    degrees, minutes, seconds = dms
+    degrees = rational_to_float(dms[0])
+    minutes = rational_to_float(dms[1])
+    seconds = rational_to_float(dms[2])
     decimal = degrees + minutes/60 + seconds/3600
     if ref in ['S', 'W']:
         decimal = -decimal
     return decimal
 
-# Extract EXIF metadata including GPS
+# Extract full EXIF metadata including GPS
 def extract_metadata(image):
     exif_data = {}
     gps_info = {}
@@ -29,14 +41,8 @@ def extract_metadata(image):
 
             # Convert to decimal coordinates if possible
             if "GPSLatitude" in gps_info and "GPSLongitude" in gps_info:
-                lat = dms_to_decimal(
-                    [float(x) for x in gps_info["GPSLatitude"]],
-                    gps_info["GPSLatitudeRef"]
-                )
-                lon = dms_to_decimal(
-                    [float(x) for x in gps_info["GPSLongitude"]],
-                    gps_info["GPSLongitudeRef"]
-                )
+                lat = dms_to_decimal(gps_info["GPSLatitude"], gps_info.get("GPSLatitudeRef", "N"))
+                lon = dms_to_decimal(gps_info["GPSLongitude"], gps_info.get("GPSLongitudeRef", "E"))
                 gps_info["DecimalCoordinates"] = (lat, lon)
 
     return exif_data, gps_info
