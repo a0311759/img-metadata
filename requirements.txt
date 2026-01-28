@@ -1,2 +1,4 @@
 streamlit
 Pillow
+exifread==3.0.0   # deeper EXIF parsing
+folium==0.15.1    # plot GPS coordinates on a map
